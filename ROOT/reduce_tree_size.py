@@ -1,9 +1,13 @@
+import os
 import ROOT
 
-f_old = ROOT.TFile.Open('/home/bruno/Downloads/hadd.root', 'READ')
+storedir = 'Downloads'
+storepath = os.path.join(os.environ['HOME'], storedir)
+f_old = ROOT.TFile.Open(os.path.join(storepath, 'hadd.root'), 'READ')
 t_old = f_old.Get('FloatingpointThresholdDummyHistomaxnoareath20Genclustersntuple/HGCalTriggerNtuple')
 
-f_new = ROOT.TFile("Downloads/skim.root", "recreate")
+outfile = os.path.join(storepath, 'skim.root')
+f_new = ROOT.TFile(outfile, "recreate")
 t_new = t_old.CloneTree(0)
 
 for entry in range(0,t_old.GetEntries()):
@@ -12,5 +16,5 @@ for entry in range(0,t_old.GetEntries()):
     if entry > 1000:
         break
 
-t_new.Print()
 f_new.Write()
+print('Skimmed tree written at {}.'.format(outfile))
