@@ -13,10 +13,17 @@ template <class KEY_T, class VAL_T, unsigned int DEPTH>
 };
 
 template<class KEY_T, class VAL_T>
-  class nested_map_def<KEY_T, VAL_T, 0>
+  class nested_map_def<KEY_T, VAL_T, 1>
 {
  public:
   typedef std::unordered_map<KEY_T, VAL_T> map_type;
+};
+
+template<typename KEY_T, typename VAL_T>
+  struct nested_map_def<KEY_T, VAL_T, 0>
+{
+  //reference: https://stackoverflow.com/questions/22791969/how-to-make-nested-maps-of-variable-depth
+  static_assert(false, "The `nested_map_def` struct should not be called with a depth of zero.");
 };
 
 template <class KEY_T, class VAL_T, unsigned int DEPTH>
@@ -34,7 +41,7 @@ template <class KEY_T, class VAL_T, unsigned int DEPTH>
   template <class ... Ts>
 	const VAL_T& operator()(KEY_T key, Ts... args) const
 	{
-	  if( sizeof...(args) != DEPTH) {
+	  if( sizeof...(args) != DEPTH-1) {
 		std::cout << "Number of arguments does not match depth of nested map."
 				  << std::endl;
 		std::exit(0);
@@ -46,7 +53,7 @@ template <class KEY_T, class VAL_T, unsigned int DEPTH>
   template <class ... Ts>
 	void set(VAL_T val, KEY_T key, Ts... args)
   {
-	if( sizeof...(args) != DEPTH) {
+	if( sizeof...(args) != DEPTH-1) {
 	  std::cout << "Number of arguments does not match depth of nested map."
 				<< std::endl;
 	  std::exit(0);
@@ -66,7 +73,6 @@ template <class KEY_T, class VAL_T, unsigned int DEPTH>
 	}
 	return true;
   }
-
 
  private:
   typename nested_map_def<KEY_T, VAL_T, DEPTH>::map_type m;
@@ -105,16 +111,15 @@ template <class KEY_T, class VAL_T, unsigned int DEPTH>
 
   //Modifier
   template <class U>
-	void internal_modifier_call(U& map, VAL_T val, KEY_T key)
+	void internal_modifier_call(U& map, const VAL_T& val, KEY_T key)
 	{
 	  map[key] = val;
 	}  
   template <class U, class... RestKeys>
-	void internal_modifier_call(U& map, VAL_T val, KEY_T key, RestKeys... args)
+	void internal_modifier_call(U& map, const VAL_T& val, KEY_T key, RestKeys... args)
   {
 	internal_modifier_call(map[key], val, args...);
   }
-
 
 };
 

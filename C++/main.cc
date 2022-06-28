@@ -6,7 +6,7 @@
 int main()
 {
   //std::unordered_map<std::string, float> myMap;
-  nested_map<std::string, float, 2> myMap2;
+  nested_map<std::string, float, 3> myMap2;
 
   myMap2.set(3.5f, "etau", "IsoMu27", "test");
   std::cout << myMap2.exists("etau", "IsoMu27", "test") << std::endl;
