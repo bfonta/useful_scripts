@@ -11,12 +11,12 @@ def reduce_tree_size(infile, tname, nentries):
 
     f_new = ROOT.TFile(outfile, 'RECREATE')
     t_new = t_old.CloneTree(0)
-     
+
     for entry in range(0,t_old.GetEntries()):
+        if entry >= nentries:
+            break
         t_old.GetEntry(entry)
         t_new.Fill()
-        if entry > nentries:
-            break
      
     f_new.Write()
     print('Skimmed tree written at {}.'.format(outfile))
