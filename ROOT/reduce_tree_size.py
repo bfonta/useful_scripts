@@ -1,20 +1,36 @@
 import os
+import argparse
 import ROOT
 
-storedir = 'Downloads'
-storepath = os.path.join(os.environ['HOME'], storedir)
-f_old = ROOT.TFile.Open(os.path.join(storepath, 'hadd.root'), 'READ')
-t_old = f_old.Get('FloatingpointThresholdDummyHistomaxnoareath20Genclustersntuple/HGCalTriggerNtuple')
+def reduce_tree_size(infile, tname, nentries):
+    f_old = ROOT.TFile.Open(infile, 'READ')
+    t_old = f_old.Get(tname)
 
-outfile = os.path.join(storepath, 'skim.root')
-f_new = ROOT.TFile(outfile, "recreate")
-t_new = t_old.CloneTree(0)
+    base, ext = infile.split('.')
+    outfile = base + '_reduced.' + ext
 
-for entry in range(0,t_old.GetEntries()):
-    t_old.GetEntry(entry)
-    t_new.Fill()
-    if entry > 1000:
-        break
+    f_new = ROOT.TFile(outfile, 'RECREATE')
+    t_new = t_old.CloneTree(0)
 
-f_new.Write()
-print('Skimmed tree written at {}.'.format(outfile))
+    for entry in range(0,t_old.GetEntries()):
+        if entry >= nentries:
+            break
+        t_old.GetEntry(entry)
+        t_new.Fill()
+     
+    f_new.Write()
+    print('Skimmed tree written at {}.'.format(outfile))
+
+if __name__ == '__main__':
+    usage = '\n'.join(('Reduces the number of entries in a TTree.',
+                       'Keeps the first `n` entries.'))
+    parser = argparse.ArgumentParser(description=usage)
+    parser.add_argument('-i', '--infile', dest='infile',
+                        required=True, help='input file')
+    parser.add_argument('-t', '--treename', dest='tname',
+                        required=True, help='name of the TTree')
+    parser.add_argument('-n', '--nentries', dest='nentries',
+                        type=int, default=100, help='number of entries to be kept')
+    FLAGS = parser.parse_args()
+
+    reduce_tree_size(FLAGS.infile, FLAGS.tname, FLAGS.nentries)
