@@ -2,21 +2,21 @@
 
 import sys
 import os
-import optparse
+import argparse
 import fileinput 
 
 def main(opt):
 
-    dir_out = opt.dir_out
-    dir_template = opt.dir_template
+    dir_out = opt.out
+    dir_template = opt.template
     model = opt.model
     
     # read template cards
     templateName = '{model}_hh_width_Mmass'.format(model=model)
-    run_card_template       = open(dir_template + '/' + templateName + '_run_card.dat','r')
-    customizecards_template = open(dir_template + '/' + templateName + '_customizecards.dat','r')
-    proc_card_template      = open(dir_template + '/' + templateName + '_proc_card.dat','r')
-    extra_card_template     = open(dir_template + '/' + templateName + '_extramodels.dat','r')
+    run_card_template       = open(dir_template + '/' + templateName + '_run_card.dat',       'r')
+    customizecards_template = open(dir_template + '/' + templateName + '_customizecards.dat', 'r')
+    proc_card_template      = open(dir_template + '/' + templateName + '_proc_card.dat',      'r')
+    extra_card_template     = open(dir_template + '/' + templateName + '_extramodels.dat',    'r')
     run_content    = run_card_template.read()
     custom_content = customizecards_template.read()
     proc_content   = proc_card_template.read()
@@ -78,10 +78,15 @@ def main(opt):
                 if not line.isspace():
                     sys.stdout.write(line)
 
+    run_card_template.close()
+    customizecards_template.close()
+    proc_card_template.close()
+    extra_card_template.close()
+
 if __name__=='__main__':
-    parser = optparse.OptionParser()
-    parser.add_option('--out',      type='string', dest='dir_out',      help='Output directory for datacards')
-    parser.add_option('--template', type='string', dest='dir_template', help='Directory storing templates')
-    parser.add_option('--model',    type='string', dest='model',        help='Model to process: BulkGraviton, RSGraviton, Radion')
-    opt, _ = parser.parse_args()
-    main(opt)
+    parser = argparse.ArgumentParser(description="Generate datacards. Example: 'python generateCards.py --model Radion --template Spin-0/cards_templates/ --out TEST/'")
+    parser.add_argument('--out', help='Output directory for datacards')
+    parser.add_argument('--template', help='Directory storing templates')
+    parser.add_argument('--model', choices=('BulkGraviton', 'RSGraviton', 'Radion'), help='Model to process')
+    FLAGS = parser.parse_args()
+    main(FLAGS)
