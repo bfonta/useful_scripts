@@ -57,10 +57,13 @@ def main(opt):
             customize_card.write( custom_content )
             customize_card.close()
             for line in fileinput.input(dir_name + card_name +'_customizecards.dat', inplace=True): 
-                if "Graviton" in model : 
+                if 'Graviton' in model: 
                     pdgId_resonance = '39'
-                if "Radion" in model : 
+                elif 'Radion' in model: 
                     pdgId_resonance = '35'
+                elif 'Singlet' in model:
+                    pdgId_resonance = '99925'
+                    
                 line = line.rstrip().replace('set param_card mass {pdg} MASS'.format(pdg=pdgId_resonance),
                                              'set param_card mass {pdg} {mass}'.format(pdg=pdgId_resonance,mass=mass))
                 line = line.rstrip().replace('set param_card decay {pdg} WIDTH'.format(pdg=pdgId_resonance),
@@ -87,6 +90,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description="Generate datacards. Example: 'python generateCards.py --model Radion --template Spin-0/cards_templates/ --out TEST/'")
     parser.add_argument('--out', help='Output directory for datacards')
     parser.add_argument('--template', help='Directory storing templates')
-    parser.add_argument('--model', choices=('BulkGraviton', 'RSGraviton', 'Radion'), help='Model to process')
+    parser.add_argument('--model', choices=('BulkGraviton', 'RSGraviton', 'Radion', 'Singlet'),
+                        help='Model to process')
     FLAGS = parser.parse_args()
     main(FLAGS)
