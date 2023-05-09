@@ -87,7 +87,8 @@ def main(opt):
     extra_card_template.close()
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description="Generate datacards. Example: 'python generateCards.py --model Radion --template Spin-0/cards_templates/ --out TEST/'")
+    example = 'python generateCards.py --out TestSinglet --template SingletModel/cards_templates/ --model Singlet'
+    parser = argparse.ArgumentParser(description="Generate datacards. \nExample: " + example)
     parser.add_argument('--out', help='Output directory for datacards')
     parser.add_argument('--template', help='Directory storing templates')
     parser.add_argument('--model', choices=('BulkGraviton', 'RSGraviton', 'Radion', 'Singlet'),
