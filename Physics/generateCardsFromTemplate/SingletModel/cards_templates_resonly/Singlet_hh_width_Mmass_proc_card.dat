@@ -1,0 +1,15 @@
+set group_subprocesses Auto
+set ignore_six_quark_processes False
+set gauge unitary
+set complex_mass_scheme False
+import model loop_sm_scalar_mod
+define p = g u c d s u~ c~ d~ s~
+
+generate g g > H H [noborn=QCD] /H NOBOX<=0
+# generate g g > H H [noborn=QCD] /H QED<=1
+
+display diagrams
+
+output Singlet_hh_width_Mmass -nojpeg
+
+

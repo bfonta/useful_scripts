@@ -3,88 +3,120 @@
 import sys
 import os
 import argparse
-import fileinput 
+import fileinput as fp
+
+class CardsContent:
+    def __init__(self, dir_template, template_name):
+        self.template_name = template_name
+        self.run_card       = open(dir_template + '/' + self.template_name + '_run_card.dat',       'r')
+        self.customize_card = open(dir_template + '/' + self.template_name + '_customizecards.dat', 'r')
+        self.proc_card      = open(dir_template + '/' + self.template_name + '_proc_card.dat',      'r')
+        self.extra_card     = open(dir_template + '/' + self.template_name + '_extramodels.dat',    'r')
+        self.read()
+
+    def read(self):
+        self.run_card = self.run_card.read()
+        self.customize_card = self.customize_card.read()
+        self.proc_card = self.proc_card.read()
+        self.extra_card = self.extra_card.read()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.run_card.close()
+        self.customize_card.close()
+        self.proc_card.close()
+        self.extra_card.close()
+
+def generate_card(pars, dir_name, card_name, model, content):
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+            
+    # run card can be copied from template with no modification
+    with open(dir_name + card_name + '_run_card.dat', 'w') as run_card:
+        run_card.write(content.run_card)
+    
+    # model card can be copied from template with no modification
+    with open(dir_name + card_name + '_extramodels.dat', 'w') as extra_card:
+        extra_card.write(content.extra_card)
+    
+    # customize card needs mass & width to be updated
+    custcard_name = dir_name + card_name + '_customizecards.dat'
+    customize_card = open(custcard_name, 'w')
+    customize_card.write(content.customize_card)
+    customize_card.close()
+
+    for line in fp.input(custcard_name, inplace=True):
+        if 'Graviton' in model: 
+            pdgid = '39'
+        elif 'Radion' in model: 
+            pdgid = '35'
+        elif 'Singlet' in model:
+            pdgid = '99925'
+            cthetaid = '13'
+            kap112id = '16'
+                    
+        line = line.rstrip().replace('set param_card mass {} MASS'.format(pdgid),
+                                     'set param_card mass {} {}'.format(pdgid, pars[0]))
+        if 'Singlet' in model:
+            line = line.rstrip().replace('set param_card bsm {} CTHETA'.format(cthetaid),
+                                         'set param_card bsm {} {}'.format(cthetaid, pars[1]))
+            line = line.rstrip().replace('set param_card bsm {} KAP112'.format(kap112id),
+                                         'set param_card bsm {} {}'.format(kap112id, pars[2]))
+        else:
+            line = line.rstrip().replace('set param_card decay {} WIDTH'.format(pdgid),
+                                         'set param_card decay {} {}'.format(pdgid, pars[1]))
+            
+        if not line.isspace():
+            sys.stdout.write(line + '\n')
+ 
+    # proc card needs output card name to be updated
+    proc_card = open(dir_name + card_name +'_proc_card.dat', 'w')
+    proc_card.write(content.proc_card)
+    proc_card.close()
+    for line in fp.input(dir_name + card_name + '_proc_card.dat', inplace=True):
+        line = line.rstrip().replace(content.template_name, card_name)
+        if not line.isspace():
+            sys.stdout.write(line + '\n')
 
 def main(opt):
-
     dir_out = opt.out
     dir_template = opt.template
     model = opt.model
     
     # read template cards
-    templateName = '{model}_hh_width_Mmass'.format(model=model)
-    run_card_template       = open(dir_template + '/' + templateName + '_run_card.dat',       'r')
-    customizecards_template = open(dir_template + '/' + templateName + '_customizecards.dat', 'r')
-    proc_card_template      = open(dir_template + '/' + templateName + '_proc_card.dat',      'r')
-    extra_card_template     = open(dir_template + '/' + templateName + '_extramodels.dat',    'r')
-    run_content    = run_card_template.read()
-    custom_content = customizecards_template.read()
-    proc_content   = proc_card_template.read()
-    extra_content  = extra_card_template.read()
+    if 'Singlet' in model:
+        template_name = '{model}_hh_width_Mmass'.format(model=model)
+    else:
+        template_name = '{model}_hh_CTctheta_Kkap_Mmass'.format(model=model)
+    cont = CardsContent(dir_template, template_name)
 
-    # list of mass points considered for Run 2 X->HH combination
-    mass_points = ['260','270','300','350','400','450','500','550','600','650','700','800','900','1000','1100','1200','1300','1500','2000']
+    # list of parameters being scanned
+    # mass_points = ('250', '260', '270', '280', '300', '320', '350', '400',
+    #                '450', '500', '550', '600', '650', '700', '750', '800',
+    #                '850', '900', '1000', '1250', '1500', '1750', '2000', '2500', '3000')
+    mass_points = ('250',)
+    width_points = (0., 0.1,)
+    ctheta_points = (0.2, 0.5, 0.8)
+    kap112_points = (1., 2., 3.) 
     
-    # list of width hypotheses considered (arbitrary values between 10-30% + NWA)
-    width_points = [0., 0.1, 0.15, 0.2, 0.25, 0.3]
-
+    common_pars = (model, cont)
     for mass in mass_points:
-        for width in width_points:
-            
-            width_in_gev = '1.0e-03' if width==0 else str(width*float(mass))
-            width_str = 'narrow' if width==0 else '{}pcts'.format(int(100*width))
-
-            card_name = '{model}_hh_{width_str}_M{mass}'.format(model=model,width_str=width_str,mass=mass)
-            dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out,card_dir=card_name)
-            
-            print("Generating {} cards".format(card_name))
-
-            if not os.path.exists(dir_name):
-                os.makedirs(dir_name)
-            
-            # run card can be copied from template with no modification
-            run_card = open( dir_name + card_name + '_run_card.dat', 'w' )
-            run_card.write( run_content )
-            run_card.close()
-        
-            # model card can be copied from template with no modification
-            extra_card = open( dir_name + card_name + '_extramodels.dat', 'w' )
-            extra_card.write( extra_content )
-            extra_card.close()
-        
-            # customize card needs mass & width to be updated
-            customize_card = open( dir_name + card_name + '_customizecards.dat', 'w' )
-            customize_card.write( custom_content )
-            customize_card.close()
-            for line in fileinput.input(dir_name + card_name +'_customizecards.dat', inplace=True): 
-                if 'Graviton' in model: 
-                    pdgId_resonance = '39'
-                elif 'Radion' in model: 
-                    pdgId_resonance = '35'
-                elif 'Singlet' in model:
-                    pdgId_resonance = '99925'
-                    
-                line = line.rstrip().replace('set param_card mass {pdg} MASS'.format(pdg=pdgId_resonance),
-                                             'set param_card mass {pdg} {mass}'.format(pdg=pdgId_resonance,mass=mass))
-                line = line.rstrip().replace('set param_card decay {pdg} WIDTH'.format(pdg=pdgId_resonance),
-                                             '\nset param_card decay {pdg} {width}'.format(pdg=pdgId_resonance,
-                                                                                           width=width_in_gev))
-                if not line.isspace():
-                    sys.stdout.write(line)
- 
-            # proc card needs output card name to be updated
-            proc_card = open( dir_name + card_name +'_proc_card.dat', 'w' )            
-            proc_card.write( proc_content )
-            proc_card.close()
-            for line in fileinput.input( dir_name + card_name + '_proc_card.dat', inplace=True): 
-                line = line.rstrip().replace(model+'_hh_width_Mmass', card_name)+'\n' 
-                if not line.isspace():
-                    sys.stdout.write(line)
-
-    run_card_template.close()
-    customizecards_template.close()
-    proc_card_template.close()
-    extra_card_template.close()
+        if 'Singlet' in model:
+            for ctheta in ctheta_points:
+                ct_str = str(ctheta).replace('.', 'p')
+                for kap in kap112_points:
+                    kap_str = str(kap).replace('.', 'p')
+                    card_name = '{model}_hh_CT{ctheta}_K{kap}_M{mass}'.format(model=model, ctheta=ct_str, kap=kap_str, mass=mass)
+                    dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
+                    print("Generating card {}".format(card_name))
+                    generate_card((mass, ctheta, kap), dir_name, card_name, *common_pars)
+        else:
+            for width in width_points:
+                width_in_gev = '1.0e-03' if width==0 else str(width*float(mass))
+                width_str = 'narrow' if width==0 else '{}pcts'.format(int(100*width))
+                card_name = '{model}_hh_{width}_M{mass}'.format(model=model, width=width_str, mass=mass)
+                dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
+                print("Generating card {}".format(card_name))
+                generate_card((mass, width), dir_name, card_name, *common_pars)
 
 if __name__=='__main__':
     example = 'python generateCards.py --out TestSinglet --template SingletModel/cards_templates/ --model Singlet'
