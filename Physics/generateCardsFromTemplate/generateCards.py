@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import fileinput as fp
+import numpy as np
 
 class CardsContent:
     def __init__(self, dir_template, template_name):
@@ -27,7 +28,6 @@ class CardsContent:
         self.extra_card.close()
 
 def plot_width(widths):
-    import numpy as np
     import matplotlib
     import matplotlib.pyplot as plt
     import mplhep as hep
@@ -56,7 +56,7 @@ def plot_width(widths):
     plt.tight_layout()
     plt.savefig('BosonWidths.png')
         
-def calc_width(mres, stheta, lambda_112, plot=False):
+def calc_width(mres, stheta, lambda112, plot=False):
     """
     Calculate width of singlet scalar as given by https://arxiv.org/pdf/2010.00597.pdf
     in eqs. A.1 and A.3, where "1" refers to SM Higgs and "2" refers to the singlet scalar.
@@ -116,6 +116,7 @@ def calc_width(mres, stheta, lambda_112, plot=False):
     m2 = mres
     width_2_to_11 = (lambda112**2 * np.sqrt(1-4*m1**2/m2**2)) / (8*np.pi*m2)
     width_2 = stheta**2*w_sm[m2] + width_2_to_11
+    return np.round(width_2, 6)
     
 def generate_card(pars, dir_name, card_name, model, content):
     if not os.path.exists(dir_name):
@@ -143,15 +144,18 @@ def generate_card(pars, dir_name, card_name, model, content):
         elif 'Singlet' in model:
             pdgid = '99925'
             sthetaid = '14'
-            kap112id = '16'
+            lambda111id = '15'
+            lambda112id = '16'
                     
         line = line.rstrip().replace('set param_card mass {} MASS'.format(pdgid),
                                      'set param_card mass {} {}'.format(pdgid, pars[0]))
         if 'Singlet' in model:
             line = line.rstrip().replace('set param_card bsm {} STHETA'.format(sthetaid),
                                          'set param_card bsm {} {}'.format(sthetaid, pars[1]))
-            line = line.rstrip().replace('set param_card bsm {} KAP112'.format(kap112id),
-                                         'set param_card bsm {} {}'.format(kap112id, pars[2]))
+            line = line.rstrip().replace('set param_card bsm {} LAMBDA112'.format(lambda112id),
+                                         'set param_card bsm {} {}'.format(lambda112id, pars[2]))
+            line = line.rstrip().replace('set param_card bsm {} LAMBDA111'.format(lambda111id),
+                                         'set param_card bsm {} {}'.format(lambda111id, pars[3]))
             wres = calc_width(mres=pars[0], stheta=pars[1], lambda112=pars[2])
             line = line.rstrip().replace('set param_card decay {} WIDTH'.format(pdgid),
                                          'set param_card decay {} {}'.format(pdgid, wres))
@@ -171,6 +175,10 @@ def generate_card(pars, dir_name, card_name, model, content):
         if not line.isspace():
             sys.stdout.write(line + '\n')
 
+def ntos(n):
+    """Converts float to string"""
+    return str(n).replace('.', 'p').replace('-', 'm')
+
 def main(opt):
     dir_out = opt.out
     dir_template = opt.template
@@ -178,32 +186,33 @@ def main(opt):
     
     # read template cards
     if 'Singlet' in model:
-        template_name = '{model}_hh_width_Mmass'.format(model=model)
+        template_name = '{model}_hh_STstheta_Llambda_Kkap_Mmass'.format(model=model)
     else:
-        template_name = '{model}_hh_STstheta_Kkap_Mmass'.format(model=model)
+        template_name = '{model}_hh_width_Mmass'.format(model=model)
     cont = CardsContent(dir_template, template_name)
 
     # list of parameters being scanned
     # mass_points = ('250', '260', '270', '280', '300', '320', '350', '400',
     #                '450', '500', '550', '600', '650', '700', '750', '800',
     #                '850', '900', '1000', '1250', '1500', '1750', '2000', '2500', '3000')
-    mass_points = ('250',)
-    width_points = (0., 0.1,)
-    stheta_points = (0.2, 0.5, 0.8)
-    kap112_points = (1., 2., 3.) 
+    mass_points = (250,)
+    stheta_points = (0.0, 1.0)#(0.2, 0.5, 0.8)
+    lambda112_points = (0.,) #np.arange(-300,301,100) # resonance coupling with two Higgses
+    lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
+    k111_points = np.arange(-7,12) # tri-linear kappa
     
     common_pars = (model, cont)
     for mass in mass_points:
         if 'Singlet' in model:
             for stheta in stheta_points:
-                st_str = str(stheta).replace('.', 'p')
-                for kap in kap112_points:
-                    kap_str = str(kap).replace('.', 'p')
-                    card_name = '{model}_hh_ST{stheta}_K{kap}_M{mass}'.format(model=model, stheta=st_str, kap=kap_str, mass=mass)
-                    dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
-                    print("Generating card {}".format(card_name))
-                    generate_card((mass, stheta, kap), dir_name, card_name, *common_pars)
+                for k111 in k111_points:
+                    for lbd112 in lambda112_points:
+                        card_name = model + '_hh_ST' + ntos(stheta) + '_L' + ntos(lbd112) + '_K' + ntos(k111) + '_M' + str(mass)
+                        dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
+                        print("Generating card {}".format(card_name))
+                        generate_card((mass, stheta, lbd112, k111*lambda111_sm), dir_name, card_name, *common_pars)
         else:
+            width_points = (0., 0.1,)
             for width in width_points:
                 width_in_gev = '1.0e-03' if width==0 else str(width*float(mass))
                 width_str = 'narrow' if width==0 else '{}pcts'.format(int(100*width))
