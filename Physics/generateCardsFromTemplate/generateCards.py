@@ -51,14 +51,14 @@ def generate_card(pars, dir_name, card_name, model, content):
             pdgid = '35'
         elif 'Singlet' in model:
             pdgid = '99925'
-            cthetaid = '13'
+            sthetaid = '14'
             kap112id = '16'
                     
         line = line.rstrip().replace('set param_card mass {} MASS'.format(pdgid),
                                      'set param_card mass {} {}'.format(pdgid, pars[0]))
         if 'Singlet' in model:
-            line = line.rstrip().replace('set param_card bsm {} CTHETA'.format(cthetaid),
-                                         'set param_card bsm {} {}'.format(cthetaid, pars[1]))
+            line = line.rstrip().replace('set param_card bsm {} STHETA'.format(sthetaid),
+                                         'set param_card bsm {} {}'.format(sthetaid, pars[1]))
             line = line.rstrip().replace('set param_card bsm {} KAP112'.format(kap112id),
                                          'set param_card bsm {} {}'.format(kap112id, pars[2]))
         else:
@@ -86,7 +86,7 @@ def main(opt):
     if 'Singlet' in model:
         template_name = '{model}_hh_width_Mmass'.format(model=model)
     else:
-        template_name = '{model}_hh_CTctheta_Kkap_Mmass'.format(model=model)
+        template_name = '{model}_hh_STstheta_Kkap_Mmass'.format(model=model)
     cont = CardsContent(dir_template, template_name)
 
     # list of parameters being scanned
@@ -95,20 +95,20 @@ def main(opt):
     #                '850', '900', '1000', '1250', '1500', '1750', '2000', '2500', '3000')
     mass_points = ('250',)
     width_points = (0., 0.1,)
-    ctheta_points = (0.2, 0.5, 0.8)
+    stheta_points = (0.2, 0.5, 0.8)
     kap112_points = (1., 2., 3.) 
     
     common_pars = (model, cont)
     for mass in mass_points:
         if 'Singlet' in model:
-            for ctheta in ctheta_points:
-                ct_str = str(ctheta).replace('.', 'p')
+            for stheta in stheta_points:
+                st_str = str(stheta).replace('.', 'p')
                 for kap in kap112_points:
                     kap_str = str(kap).replace('.', 'p')
-                    card_name = '{model}_hh_CT{ctheta}_K{kap}_M{mass}'.format(model=model, ctheta=ct_str, kap=kap_str, mass=mass)
+                    card_name = '{model}_hh_ST{stheta}_K{kap}_M{mass}'.format(model=model, stheta=st_str, kap=kap_str, mass=mass)
                     dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
                     print("Generating card {}".format(card_name))
-                    generate_card((mass, ctheta, kap), dir_name, card_name, *common_pars)
+                    generate_card((mass, stheta, kap), dir_name, card_name, *common_pars)
         else:
             for width in width_points:
                 width_in_gev = '1.0e-03' if width==0 else str(width*float(mass))

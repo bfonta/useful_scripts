@@ -1,4 +1,4 @@
 set param_card mass 99925 MASS
-set param_card bsm 13 CTHETA
+set param_card bsm 14 STHETA
 set param_card bsm 16 KAP112
 # set param_card decay 99925 WIDTH
