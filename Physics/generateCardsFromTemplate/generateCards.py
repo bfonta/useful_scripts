@@ -6,6 +6,30 @@ import argparse
 import fileinput as fp
 import numpy as np
 from tqdm import tqdm
+    
+class ScanParameters:
+    class dot(dict):
+        """dot.notation access to dictionary attributes"""
+        __getattr__ = dict.get
+        __setattr__ = dict.__setitem__
+        __delattr__ = dict.__delitem__
+
+    def __init__(self, mass: float, stheta: float, lambda112: float, kappa111: float):
+        self.mass      = mass
+        self.stheta    = stheta
+        self.lambda112 = lambda112
+        self.kappa111  = kappa111
+
+        self.lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
+        self.lambda111    = self.kappa111 * self.lambda111_sm
+
+        self.ctheta = np.sqrt(1-self.stheta**2) # stheta imposes a constraint on the cossine
+
+        self.idx = self.dot({'pdg'       : '99925',
+                             'ctheta'    : '13',
+                             'stheta'    : '14',
+                             'lambda111' : '15',
+                             'lambda112' : '16'})
 
 class CardsContent:
     def __init__(self, dir_template, template_name):
@@ -119,7 +143,7 @@ def calc_width(mres, stheta, lambda112, plot=False):
     width_2 = stheta**2*w_sm[m2] + width_2_to_11
     return np.round(width_2, 6)
     
-def generate_card(pars, dir_name, card_name, model, content):
+def generate_card(p, dir_name, card_name, content):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
             
@@ -137,33 +161,22 @@ def generate_card(pars, dir_name, card_name, model, content):
     customize_card.write(content.customize_card)
     customize_card.close()
 
-    for line in fp.input(custcard_name, inplace=True):
-        if 'Graviton' in model: 
-            pdgid = '39'
-        elif 'Radion' in model: 
-            pdgid = '35'
-        elif 'Singlet' in model:
-            pdgid = '99925'
-            sthetaid = '14'
-            lambda111id = '15'
-            lambda112id = '16'
-                    
-        line = line.rstrip().replace('set param_card mass {} MASS'.format(pdgid),
-                                     'set param_card mass {} {}'.format(pdgid, pars[0]))
-        if 'Singlet' in model:
-            line = line.rstrip().replace('set param_card bsm {} STHETA'.format(sthetaid),
-                                         'set param_card bsm {} {}'.format(sthetaid, pars[1]))
-            line = line.rstrip().replace('set param_card bsm {} LAMBDA112'.format(lambda112id),
-                                         'set param_card bsm {} {}'.format(lambda112id, pars[2]))
-            line = line.rstrip().replace('set param_card bsm {} LAMBDA111'.format(lambda111id),
-                                         'set param_card bsm {} {}'.format(lambda111id, pars[3]))
-            wres = calc_width(mres=pars[0], stheta=pars[1], lambda112=pars[2])
-            line = line.rstrip().replace('set param_card decay {} WIDTH'.format(pdgid),
-                                         'set param_card decay {} {}'.format(pdgid, wres))
-        else:
-            line = line.rstrip().replace('set param_card decay {} WIDTH'.format(pdgid),
-                                         'set param_card decay {} {}'.format(pdgid, pars[1]))
-            
+    ph = ('MASS', 'CTHETA', 'STHETA', 'LAMBDA111', 'LAMBDA112', 'WIDTH') #placeholders
+    with open(custcard_name, 'r') as myfile:
+        contents = myfile.read()
+        if any(h not in contents for h in ph):
+            raise RuntimeError("Template {} is missing some mandatory placeholders!".format(custcard_name))
+
+    rep = lambda line, old, new : line.rstrip().replace(old, new)
+    spc = 'set param_card '
+    for line in fp.input(custcard_name, inplace=True):        
+        line = rep(line, spc + 'mass {} MASS'.format(p.idx.pdg),           spc + 'mass {} {}'.format(p.idx.pdg, p.mass))
+        line = rep(line, spc + 'bsm {} CTHETA'.format(p.idx.ctheta),       spc + 'bsm {} {}'.format(p.idx.ctheta, p.ctheta))
+        line = rep(line, spc + 'bsm {} STHETA'.format(p.idx.stheta),       spc + 'bsm {} {}'.format(p.idx.stheta, p.stheta))
+        line = rep(line, spc + 'bsm {} LAMBDA112'.format(p.idx.lambda112), spc + 'bsm {} {}'.format(p.idx.lambda112, p.lambda112))
+        line = rep(line, spc + 'bsm {} LAMBDA111'.format(p.idx.lambda111), spc + 'bsm {} {}'.format(p.idx.lambda111, p.lambda111))
+        wres = calc_width(mres=p.mass, stheta=p.stheta, lambda112=p.lambda112)
+        line = rep(line, spc + 'decay {} WIDTH'.format(p.idx.pdg),         spc + 'decay {} {}'.format(p.idx.pdg, wres))
         if not line.isspace():
             sys.stdout.write(line + '\n')
  
@@ -183,18 +196,14 @@ def ntos(n, around=None):
     return str(n).replace('.', 'p').replace('-', 'm')
 
 def main(opt):
-    model = opt.model
-    template_dirs = {'Singlet_nores': 'SingletModel/cards_templates_nores/',
-                     'Singlet_resonly': 'SingletModel/cards_templates_resonly/',
-                     'Singlet_all': 'SingletModel/cards_templates_all/'}
+    template_dirs = {'Singlet_nores'   : 'SingletModel/cards_templates_nores/',
+                     'Singlet_resonly' : 'SingletModel/cards_templates_resonly/',
+                     'Singlet_all'     : 'SingletModel/cards_templates_all/'}
     dir_out = opt.out
     dir_template = template_dirs[dir_out]
     
     ## read template cards
-    if 'Singlet' in model:
-        template_name = '{model}_hh_STstheta_Llambda_Kkap_Mmass'.format(model=model)
-    else:
-        template_name = '{model}_hh_width_Mmass'.format(model=model)
+    template_name = 'Singlet_hh_STstheta_Llambda_Kkap_Mmass'
     cont = CardsContent(dir_template, template_name)
 
     ## list of parameters being scanned
@@ -202,41 +211,25 @@ def main(opt):
     #                850, 900, 950, 1000)
     mass_points = (250, 350, 450, 550, 650, 750, 850, 950)
     stheta_points = np.arange(0.,1.1,.2) # sine of theta mixing between the new scalar and the SM Higgs
-    lambda112_points = np.arange(-300,301,100) # resonance coupling with two Higgses
+    l112_points = np.arange(-300,301,100) # resonance coupling with two Higgses
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
     k111_points = (1.,) #np.arange(-7,12) # tri-linear kappa
 
-    common_pars = (model, cont)
     for mass in tqdm(mass_points):
-        if 'Singlet' in model:
-            for stheta in stheta_points:
-                for k111 in k111_points:
-                    for lbd112 in lambda112_points:
-                        card_name = model + '_hh_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111) + '_M' + str(mass)
-                        dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
-                        generate_card((mass, stheta, lbd112, k111*lambda111_sm), dir_name, card_name, *common_pars)
-        
-        else:
-            width_points = (0., 0.1,)
-            for width in width_points:
-                width_in_gev = '1.0e-03' if width==0 else str(width*float(mass))
-                width_str = 'narrow' if width==0 else '{}pcts'.format(int(100*width))
-                card_name = '{model}_hh_{width}_M{mass}'.format(model=model, width=width_str, mass=mass)
-                dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
-                generate_card((mass, width), dir_name, card_name, *common_pars)
-          
+        for stheta in stheta_points:
+            for k111 in k111_points:
+                for lbd112 in l112_points:
+                    card_name = 'Singlet_hh_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111) + '_M' + str(mass)
+                    dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
+                    pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
+                    generate_card(pars, dir_name, card_name, cont)
+                  
+    print("{} cards were generated.".format(len(mass_points)*len(stheta_points)*len(l112_points)*len(k111_points)))
 
-    if 'Singlet' in model:
-        print("{} cards were generated.".format(len(mass_points)*len(stheta_points)*len(lambda112_points)*len(k111_points)))
-    else:
-        print("{} cards were generated.".format(len(width_points)))
-        
 if __name__=='__main__':
-    example = 'python generateCards.py --out TestSinglet --template SingletModel/cards_templates/ --model Singlet'
+    example = 'python generateCards.py --out TestSinglet --template SingletModel/cards_templates/'
     parser = argparse.ArgumentParser(description="Generate datacards. \nExample: " + example)
     parser.add_argument('--out', choices=('Singlet_resonly', 'Singlet_nores', 'Singlet_all'),
                         help='Output directory for datacards')
-    parser.add_argument('--model', choices=('BulkGraviton', 'RSGraviton', 'Radion', 'Singlet'),
-                        help='Model to process')
     FLAGS = parser.parse_args()
     main(FLAGS)
