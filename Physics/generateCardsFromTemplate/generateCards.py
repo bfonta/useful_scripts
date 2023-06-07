@@ -27,7 +27,7 @@ class ScanParameters:
 
         self.idx = self.dot({'pdg'       : '99925',
                              'ctheta'    : '13',
-                             'stheta'    : '14',
+                             'stheta'    : '14,'
                              'lambda111' : '15',
                              'lambda112' : '16'})
 
