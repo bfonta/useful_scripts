@@ -31,8 +31,8 @@ func create_dir(d string) {
 	}
 }
 
-func replace_line(sed_line string, filename string) {
-	cmd := exec.Command("sed", "-i", "-E", "-e", sed_line, file_name)
+func replace_line(sed_line string) {
+	cmd := exec.Command("sed", "-i", "-E", "-e", sed_line, "Cards/param_card.dat")
 	check_cmd_error(cmd)
 }
 
@@ -113,18 +113,17 @@ func calc_width(mres float64, stheta float64, lambda112 float64) string {
 }
 
 func main() {
-	masses		:= []float64{250, 350, 450, 550, 650, 750, 850, 950}
-	sthetas		:= []float64{0.5}
-	lambdas112	:= []float64{-300.}
-	kappas112	:= []float64{-5}
+	masses		:= []float64{300, 600, 1000}
+	sthetas		:= []float64{0.9}
+	lambdas112	:= []float64{-300, -200, -100, 0, 100, 200, 300}
+	// kappas112	:= []float64{-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	kappas112	:= []float64{1}
 
-	lambda112_sm := m.Pow(125, 2) / (2*246.) //tri-linear Higgs coupling
+	lambda111_sm := m.Pow(125, 2) / (2*246.) //tri-linear Higgs coupling
 
 	rp := regexp.MustCompile(regexp.QuoteMeta("."))
 	rm := regexp.MustCompile(regexp.QuoteMeta("-"))
 
-	create_dir("logs")
-	
 	cmd := exec.Command("sed", "-i", "-e", "s/# automatic_html_opening = True/automatic_html_opening = False/g", "Cards/me5_configuration.txt")
 	check_cmd_error(cmd)
 	
@@ -132,8 +131,8 @@ func main() {
 	cmd = exec.Command("sed", "-i", "-E", "-e", "s/[0-9]+ = nevents/10000 = nevents/g", "Cards/run_card.dat")
 	check_cmd_error(cmd)
 
+	create_dir("logs")
 	for _, mass := range masses {
-		// "Cards/param_card.dat"
 		replace_line("s/ 99925 [0-9]+?\\.?[0-9]+?.* \\# Weta/ 99925 " +	FtoS(mass) + " \\# Weta/g")
 
 		for _, stheta := range sthetas {
@@ -141,7 +140,7 @@ func main() {
 			replace_line("s/ 13 [0-9]+?\\.?[0-9]+?.* \\# ctheta/ 13 " + calc_ctheta(stheta) + " \\# ctheta/g")
 
 			for _, kap := range kappas112 {
-					replace_line("s/ 15 [0-9]+?\\.?[0-9]+?.* \\# kap111/ 15 " + FtoS(kap * lambda112_sm) + " \\# kap111/g")
+					replace_line("s/ 15 [0-9]+?\\.?[0-9]+?.* \\# kap111/ 15 " + FtoS(kap * lambda111_sm) + " \\# kap111/g")
 
 				for _, lbd := range lambdas112 {
 					replace_line("s/ 16 [0-9]+?\\.?[0-9]+?.* \\# kap112/ 16 " + FtoS(lbd) + " \\# kap112/g")
