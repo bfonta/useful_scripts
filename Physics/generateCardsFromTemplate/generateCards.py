@@ -203,7 +203,7 @@ def main(opt):
     dir_template = template_dirs[dir_out]
     
     ## read template cards
-    template_name = 'Singlet_hh_STstheta_Llambda_Kkap_Mmass'
+    template_name = 'Singlet_hh_Mmass_STstheta_Llambda_Kkap'
     cont = CardsContent(dir_template, template_name)
 
     ## list of parameters being scanned
