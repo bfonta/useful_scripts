@@ -27,7 +27,7 @@ class ScanParameters:
 
         self.idx = self.dot({'pdg'       : '99925',
                              'ctheta'    : '13',
-                             'stheta'    : '14,'
+                             'stheta'    : '14',
                              'lambda111' : '15',
                              'lambda112' : '16'})
 
@@ -210,16 +210,16 @@ def main(opt):
     # mass_points = (250, 260, 270, 280, 290, 300, 320, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
     #                850, 900, 950, 1000)
     mass_points = (250, 350, 450, 550, 650, 750, 850, 950)
-    stheta_points = np.arange(0.,1.1,.2) # sine of theta mixing between the new scalar and the SM Higgs
+    stheta_points = np.arange(0.,1.001,.1) # sine of theta mixing between the new scalar and the SM Higgs
     l112_points = np.arange(-300,301,100) # resonance coupling with two Higgses
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
-    k111_points = (1.,) #np.arange(-7,12) # tri-linear kappa
+    k111_points = (1., 2.4, 10) #np.arange(-7,12) # tri-linear kappa
 
     for mass in tqdm(mass_points):
         for stheta in stheta_points:
             for k111 in k111_points:
                 for lbd112 in l112_points:
-                    card_name = 'Singlet_hh_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111) + '_M' + str(mass)
+                    card_name = 'Singlet_hh_M' + str(mass) + '_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
                     dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
                     pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
                     generate_card(pars, dir_name, card_name, cont)
@@ -227,7 +227,7 @@ def main(opt):
     print("{} cards were generated.".format(len(mass_points)*len(stheta_points)*len(l112_points)*len(k111_points)))
 
 if __name__=='__main__':
-    example = 'python generateCards.py --out TestSinglet --template SingletModel/cards_templates/'
+    example = 'python generateCards.py --out Singlet_all'
     parser = argparse.ArgumentParser(description="Generate datacards. \nExample: " + example)
     parser.add_argument('--out', choices=('Singlet_resonly', 'Singlet_nores', 'Singlet_all'),
                         help='Output directory for datacards')
