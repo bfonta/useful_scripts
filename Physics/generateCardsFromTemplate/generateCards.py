@@ -213,7 +213,7 @@ def main(opt):
     stheta_points = np.arange(0.,1.001,.1) # sine of theta mixing between the new scalar and the SM Higgs
     l112_points = np.arange(-300,301,100) # resonance coupling with two Higgses
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
-    k111_points = (1., 2.4, 10) #np.arange(-7,12) # tri-linear kappa
+    k111_points = (1.0, 2.4, 10.0) #np.arange(-7,12) # tri-linear kappa
 
     for mass in tqdm(mass_points):
         for stheta in stheta_points:
