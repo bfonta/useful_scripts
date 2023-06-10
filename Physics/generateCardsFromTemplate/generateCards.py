@@ -203,7 +203,7 @@ def main(opt):
     dir_template = template_dirs[dir_out]
     
     ## read template cards
-    template_name = 'Singlet_hh_Mmass_STstheta_Llambda_Kkap'
+    template_name = 'Singlet_Ttag_Mmass_STstheta_Llambda_Kkap'
     cont = CardsContent(dir_template, template_name)
 
     ## list of parameters being scanned
@@ -219,7 +219,7 @@ def main(opt):
         for stheta in stheta_points:
             for k111 in k111_points:
                 for lbd112 in l112_points:
-                    card_name = 'Singlet_hh_M' + str(mass) + '_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
+                    card_name = 'Singlet_T' + FLAGS.tag + '_M' + str(mass) + '_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
                     dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
                     pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
                     generate_card(pars, dir_name, card_name, cont)
@@ -231,5 +231,6 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description="Generate datacards. \nExample: " + example)
     parser.add_argument('--out', choices=('Singlet_resonly', 'Singlet_nores', 'Singlet_all'),
                         help='Output directory for datacards')
+    parser.add_argument("--tag", required=True, help="Identifier.")
     FLAGS = parser.parse_args()
     main(FLAGS)
