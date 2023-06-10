@@ -1,0 +1,14 @@
+set group_subprocesses Auto
+set ignore_six_quark_processes False
+set gauge unitary
+set complex_mass_scheme False
+import model loop_sm_scalar
+define p = g u c d s u~ c~ d~ s~
+
+generate g g > H H [noborn=QCD]
+
+# display diagrams
+
+output Singlet_Ttag_Mmass_STstheta_Llambda_Kkap -nojpeg
+
+
