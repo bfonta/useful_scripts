@@ -207,9 +207,8 @@ def main(opt):
     cont = CardsContent(dir_template, template_name)
 
     ## list of parameters being scanned
-    # mass_points = (250, 260, 270, 280, 290, 300, 320, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
-    #                850, 900, 950, 1000)
-    mass_points = (250, 350, 450, 550, 650, 750, 850, 950)
+    mass_points = (250, 260, 270, 280, 290, 300, 320, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
+                   850, 900, 950, 1000)
     stheta_points = np.arange(0.,1.001,.1) # sine of theta mixing between the new scalar and the SM Higgs
     l112_points = np.arange(-300,301,100) # resonance coupling with two Higgses
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
