@@ -1,4 +1,4 @@
-65;7200;1c#!/usr/bin/python
+#!/usr/bin/python
 
 import sys
 import os
@@ -32,15 +32,15 @@ class ScanParameters:
                              'lambda112' : '16'})
 
 class CardsContent:
-    def __init__(self, dir_template, template_name):
-        self.template_name = template_name
-        self.run_card       = open(dir_template + '/' + self.template_name + '_run_card.dat',       'r')
-        self.customize_card = open(dir_template + '/' + self.template_name + '_customizecards.dat', 'r')
-        self.proc_card      = open(dir_template + '/' + self.template_name + '_proc_card.dat',      'r')
-        self.extra_card     = open(dir_template + '/' + self.template_name + '_extramodels.dat',    'r')
-        self.read()
+    def __init__(self, adir, name):
+        self.name = name
+        self.run_card       = open(adir + '/' + self.name + '_run_card.dat',       'r')
+        self.customize_card = open(adir + '/' + self.name + '_customizecards.dat', 'r')
+        self.proc_card      = open(adir + '/' + self.name + '_proc_card.dat',      'r')
+        self.extra_card     = open(adir + '/' + self.name + '_extramodels.dat',    'r')
+        self._read()
 
-    def read(self):
+    def _read(self):
         self.run_card = self.run_card.read()
         self.customize_card = self.customize_card.read()
         self.proc_card = self.proc_card.read()
@@ -143,7 +143,7 @@ def calc_width(mres, stheta, lambda112, plot=False):
     width_2 = stheta**2*w_sm[m2] + width_2_to_11
     return np.round(width_2, 6)
     
-def generate_card(p, dir_name, card_name, content):
+def generate_card(p, dir_name, card_name, content, merge=False):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
             
@@ -169,7 +169,7 @@ def generate_card(p, dir_name, card_name, content):
 
     rep = lambda line, old, new : line.rstrip().replace(old, new)
     spc = 'set param_card '
-    for line in fp.input(custcard_name, inplace=True):        
+    for line in fp.input(custcard_name, inplace=True):
         line = rep(line, spc + 'mass {} MASS'.format(p.idx.pdg),           spc + 'mass {} {}'.format(p.idx.pdg, p.mass))
         line = rep(line, spc + 'bsm {} CTHETA'.format(p.idx.ctheta),       spc + 'bsm {} {}'.format(p.idx.ctheta, p.ctheta))
         line = rep(line, spc + 'bsm {} STHETA'.format(p.idx.stheta),       spc + 'bsm {} {}'.format(p.idx.stheta, p.stheta))
@@ -179,16 +179,36 @@ def generate_card(p, dir_name, card_name, content):
         line = rep(line, spc + 'decay {} WIDTH'.format(p.idx.pdg),         spc + 'decay {} {}'.format(p.idx.pdg, wres))
         if not line.isspace():
             sys.stdout.write(line + '\n')
- 
+
     # proc card needs output card name to be updated
-    proc_card = open(dir_name + card_name +'_proc_card.dat', 'w')
+    proc_name = dir_name + card_name +'_proc_card.dat'
+    proc_card = open(proc_name, 'w')
     proc_card.write(content.proc_card)
     proc_card.close()
-    for line in fp.input(dir_name + card_name + '_proc_card.dat', inplace=True):
-        line = line.rstrip().replace(content.template_name, card_name)
+    for line in fp.input(proc_name, inplace=True):
+        line = line.rstrip().replace(content.name, card_name)
         if not line.isspace():
             sys.stdout.write(line + '\n')
 
+    if merge:
+        newl = '\n'
+        cont = CardsContent(dir_name, card_name)
+        with open(proc_name, 'a') as proc_card:
+            proc_card.write(newl)
+            proc_card.write('launch' + newl)
+            proc_card.write(newl)
+            proc_card.write(cont.run_card)
+            proc_card.write(newl)
+            proc_card.write(cont.customize_card)
+
+        # replace CMS parameters in the old run_card.dat contents
+        for line in fp.input(proc_name, inplace=True):
+            line = rep(line, '$DEFAULT_PDF_SETS = lhaid', '306000 = lhaid')
+            line = rep(line, '$DEFAULT_PDF_MEMBERS  = reweight_PDF', '')
+            if not line.isspace():
+                sys.stdout.write(line + '\n')
+
+        
 def ntos(n, around=None):
     """Converts float to string"""
     if around is not None:
@@ -220,7 +240,7 @@ def main(opt):
                     card_name = 'Singlet_T' + FLAGS.tag + '_M' + str(mass) + '_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
                     dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
                     pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
-                    generate_card(pars, dir_name, card_name, cont)
+                    generate_card(pars, dir_name, card_name, cont, merge=FLAGS.merge)
                   
     print("{} cards were generated.".format(len(mass_points)*len(stheta_points)*len(l112_points)*len(k111_points)))
 
@@ -230,5 +250,6 @@ if __name__=='__main__':
     parser.add_argument('--out', choices=('Singlet_resonly', 'Singlet_nores', 'Singlet_all'),
                         help='Output directory for datacards')
     parser.add_argument("--tag", required=True, help="Identifier.")
+    parser.add_argument("--merge", action="store_true", help="Whether to merge all datacards into one *_proc_card.dat.")
     FLAGS = parser.parse_args()
     main(FLAGS)
