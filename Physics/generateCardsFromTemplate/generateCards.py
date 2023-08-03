@@ -148,11 +148,13 @@ def generate_card(p, dir_name, card_name, content, merge=False):
         os.makedirs(dir_name)
             
     # run card can be copied from template with no modification
-    with open(dir_name + card_name + '_run_card.dat', 'w') as run_card:
+    runcard_name = dir_name + card_name + '_run_card.dat'
+    with open(runcard_name, 'w') as run_card:
         run_card.write(content.run_card)
-    
+
     # model card can be copied from template with no modification
-    with open(dir_name + card_name + '_extramodels.dat', 'w') as extra_card:
+    extracard_name = dir_name + card_name + '_extramodels.dat'
+    with open(extracard_name, 'w') as extra_card:
         extra_card.write(content.extra_card)
     
     # customize card needs mass & width to be updated
@@ -208,7 +210,12 @@ def generate_card(p, dir_name, card_name, content, merge=False):
             if not line.isspace():
                 sys.stdout.write(line + '\n')
 
-        
+        # delete files merged into *_proc_data.dat to avoid confusion
+        os.remove(custcard_name)
+        os.remove(runcard_name)
+        os.remove(extracard_name)
+
+                
 def ntos(n, around=None):
     """Converts float to string"""
     if around is not None:
