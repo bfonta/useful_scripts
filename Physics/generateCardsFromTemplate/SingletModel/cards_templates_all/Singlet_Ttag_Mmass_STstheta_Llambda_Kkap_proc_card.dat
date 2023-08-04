@@ -9,6 +9,6 @@ generate g g > H H [noborn=QCD]
 
 # display diagrams
 
-output Singlet_Ttag_Mmass_STstheta_Llambda_Kkap -nojpeg
+output Singlet_Ttag_Mmass_STstheta_Llambda_Kkap_Output -nojpeg
 
 
