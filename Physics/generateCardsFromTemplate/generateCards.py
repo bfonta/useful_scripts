@@ -5,7 +5,6 @@ import os
 import argparse
 import fileinput as fp
 import numpy as np
-from tqdm import tqdm
 import re
     
 class ScanParameters:
@@ -252,7 +251,8 @@ def main(opt):
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
     k111_points = (1.0, 2.4, 10.0) #np.arange(-7,12) # tri-linear kappa
 
-    for mass in tqdm(mass_points):
+    for mass in mass_points:
+        print("Processing mass point {}.".format(mass))
         for stheta in stheta_points:
             for k111 in k111_points:
                 for lbd112 in l112_points:
