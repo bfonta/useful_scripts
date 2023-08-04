@@ -205,7 +205,7 @@ def generate_card(p, dir_name, card_name, content, merge=False):
             proc_card.write(cont.customize_card)
 
         # captures CMS MG5 syntax to be replaced with `set` statements
-        pattern = re.compile("^\s+([a-zA-Z\d\._\-]+)\s+=\s([a-zA-Z\d_\.]+)\s+\!.+$")
+        pattern = re.compile("^\s+([a-zA-Z\d\._\-]+)\s+=\s+([a-zA-Z\d_\.]+).+$")
         
         for line in fp.input(proc_name, inplace=True):
             groups = pattern.findall(line)
