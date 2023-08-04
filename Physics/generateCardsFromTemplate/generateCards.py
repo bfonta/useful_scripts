@@ -6,6 +6,7 @@ import argparse
 import fileinput as fp
 import numpy as np
 from tqdm import tqdm
+import re
     
 class ScanParameters:
     class dot(dict):
@@ -203,13 +204,24 @@ def generate_card(p, dir_name, card_name, content, merge=False):
             proc_card.write(newl)
             proc_card.write(cont.customize_card)
 
-        # replace CMS parameters in the old run_card.dat contents
+        # captures CMS MG5 syntax to be replaced with `set` statements
+        pattern = re.compile("^\s+([a-zA-Z\d\._\-]+)\s+=\s([a-zA-Z\d_\.]+)\s+\!.+$")
+        
         for line in fp.input(proc_name, inplace=True):
-            line = rep(line, '$DEFAULT_PDF_SETS = lhaid', '306000 = lhaid')
-            line = rep(line, '$DEFAULT_PDF_MEMBERS  = reweight_PDF', '')
+            groups = pattern.findall(line)
+            if len(groups)>0:
+                groups = groups[0]
+                line = 'set ' + groups[1] + ' = ' + groups[0]
+
+            # replace CMS parameters in the old run_card.dat contents
+            line = rep(line, ' $DEFAULT_PDF_SETS = lhaid', 'set lhaid = 306000')
+            line = rep(line, ' $DEFAULT_PDF_MEMBERS  = reweight_PDF', '')
+
             if not line.isspace():
                 sys.stdout.write(line + '\n')
 
+        
+            
         # delete files merged into *_proc_data.dat to avoid confusion
         os.remove(custcard_name)
         os.remove(runcard_name)
