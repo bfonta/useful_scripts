@@ -252,8 +252,9 @@ def main(opt):
     k111_points = (1.0, 2.4, 10.0) #np.arange(-7,12) # tri-linear kappa
 
     for mass in mass_points:
-        print("Processing mass point {}.".format(mass))
+        print("Processing mass point {}.".format(mass), flush=True)
         for stheta in stheta_points:
+            print("  - Sin(theta)={}".format(ntos(stheta,3)), flush=True)
             for k111 in k111_points:
                 for lbd112 in l112_points:
                     card_name = 'Singlet_T' + FLAGS.tag + '_M' + str(mass) + '_ST' + ntos(stheta, 1) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
