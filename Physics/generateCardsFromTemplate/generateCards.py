@@ -247,7 +247,7 @@ def main(opt):
     ## list of parameters being scanned
     mass_points = (280, 300, 400, 500, 600, 700, 800)
     stheta_points = np.arange(0.,1.001,.1) # sine of theta mixing between the new scalar and the SM Higgs
-    l112_points = np.arange(-600,601,100) # resonance coupling with two Higgses
+    l112_points = np.arange(-600,601,100.).astype(float) # resonance coupling with two Higgses
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
     k111_points = (1.0, 2.4, 10.0) #np.arange(-7,12) # tri-linear kappa
 
