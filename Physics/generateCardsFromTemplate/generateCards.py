@@ -163,11 +163,16 @@ def generate_card(p, dir_name, card_name, content, merge=False):
     customize_card.write(content.customize_card)
     customize_card.close()
 
-    ph = ('MASS', 'CTHETA', 'STHETA', 'LAMBDA111', 'LAMBDA112', 'WIDTH') #placeholders
+    ph = ('MASS', 'LAMBDA111', 'LAMBDA112', 'WIDTH') #placeholders
     with open(custcard_name, 'r') as myfile:
         contents = myfile.read()
         if any(h not in contents for h in ph):
             raise RuntimeError("Template {} is missing some mandatory placeholders!".format(custcard_name))
+    ph = ('CTHETA', 'STHETA')
+    with open(custcard_name, 'r') as myfile:
+        contents = myfile.read()
+        if all(h not in contents for h in ph):
+            raise RuntimeError("Template {} needs to have at least one of the following: {}.".format(custcard_name, ph))
 
     rep = lambda line, old, new : line.rstrip().replace(old, new)
     spc = 'set param_card '
@@ -245,11 +250,11 @@ def main(opt):
     cont = CardsContent(dir_template, template_name)
 
     ## list of parameters being scanned
-    mass_points = (280, 300, 400, 500, 600, 700, 800)
-    stheta_points = np.arange(0.,1.001,.1) # sine of theta mixing between the new scalar and the SM Higgs
-    l112_points = np.arange(-600,601,100.).astype(float) # resonance coupling with two Higgses
+    mass_points = (280, 300, 400, 500, 600, 700, 800, 900, 1000)
+    stheta_points = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0) # sine of theta mixing between the new scalar and the SM Higgs
+    l112_points = (-600, -500, -400, -300, -200, -100, -50, 0., 50, 100, 200, 300, 400, 500, 600) # resonance coupling with two Higgses
     lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
-    k111_points = (1.0, 2.4, 10.0) #np.arange(-7,12) # tri-linear kappa
+    k111_points = (-1.0, 1.0, 2.4, 6.0) # tri-linear kappa
 
     for mass in mass_points:
         print("Processing mass point {}.".format(mass), flush=True)
