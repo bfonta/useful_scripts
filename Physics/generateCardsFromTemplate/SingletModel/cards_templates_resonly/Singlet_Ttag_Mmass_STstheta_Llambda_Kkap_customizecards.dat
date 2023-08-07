@@ -1,0 +1,6 @@
+set param_card mass 99925 MASS
+set param_card bsm 13 0.0
+set param_card bsm 14 STHETA
+set param_card bsm 15 LAMBDA111
+set param_card bsm 16 LAMBDA112
+set param_card decay 99925 WIDTH
