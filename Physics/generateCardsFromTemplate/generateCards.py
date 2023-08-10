@@ -249,25 +249,38 @@ def main(opt):
     cont = CardsContent(dir_template, template_name)
 
     ## list of parameters being scanned
-    mass_points = (280.00, 300.00, 400.00, 500.00, 600.00, 700.00, 800.00, 900.00, 1000.00)
-    stheta_points = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99) # sine of theta mixing between the new scalar and the SM Higgs
-    l112_points = (-600.00, -500.00, -400.00, -300.00, -200.00, -100.00, -50.00,
-                   0.00, 50.00, 100.00, 200.00, 300.00, 400.00, 500.00, 600.00) # resonance coupling with two Higgses
-    lambda111_sm = np.round(125**2 / (2*246.), 6) # tri-linear Higgs coupling
-    k111_points = (-1.0, 1.0, 2.4, 6.0) # tri-linear kappa
+    if opt.manual:
+        mass_points = (300.00, 300.00, 600.00, 600.00, 1000.00, 1000.00)             
+        stheta_points = (0.3, 0.1, 0.8, 0.1, 0.4, 0.3)
+        l112_points = (-500.00, -400.00, 600.00, 300.00, 100.00, 300.00)
+        k111_points = (1.0,)*6 # + (2.4,)*6 + ... tri-linear kappa
+    else:
+        mass_points = (280.00, 300.00, 400.00, 500.00, 600.00, 700.00, 800.00, 900.00, 1000.00)
+        stheta_points = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99) # sine of theta mixing between the new scalar and the SM Higgs
+        l112_points = (-600.00, -500.00, -400.00, -300.00, -200.00, -100.00, -50.00,
+                       0.00, 50.00, 100.00, 200.00, 300.00, 400.00, 500.00, 600.00) # resonance coupling with two Higgses
+        k111_points = (-1.0, 1.0, 2.4, 6.0) # tri-linear kappa
 
-    for mass in mass_points:
-        print("Processing mass point {}.".format(mass), flush=True)
-        for stheta in stheta_points:
-            print("  - Sin(theta)={}".format(ntos(stheta)), flush=True)
-            for k111 in k111_points:
-                for lbd112 in l112_points:
-                    card_name = 'Singlet_T' + FLAGS.tag + '_M' + ntos(mass) + '_ST' + ntos(stheta) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
-                    dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
-                    pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
-                    generate_card(pars, dir_name, card_name, cont, merge=FLAGS.merge)
-                  
-    print("{} cards were generated.".format(len(mass_points)*len(stheta_points)*len(l112_points)*len(k111_points)))
+    if opt.manual:
+        for mass,stheta,k111,lbd112 in zip(mass_points,stheta_points,k111_points,l112_points):
+            print("Processing point mass={}, sin(theta)={}, lambda112={}, kl={}".format(mass,stheta,lbd112,k111), flush=True)
+            card_name = 'Singlet_T' + FLAGS.tag + '_M' + ntos(mass) + '_ST' + ntos(stheta) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
+            dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
+            pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
+            generate_card(pars, dir_name, card_name, cont, merge=FLAGS.merge)
+        print("{} cards were generated.".format(len(mass_points)))
+    else:
+        for mass in mass_points:
+            print("Processing mass point {}.".format(mass), flush=True)
+            for stheta in stheta_points:
+                print("  - Sin(theta)={}".format(ntos(stheta)), flush=True)
+                for k111 in k111_points:
+                    for lbd112 in l112_points:
+                        card_name = 'Singlet_T' + FLAGS.tag + '_M' + ntos(mass) + '_ST' + ntos(stheta) + '_L' + ntos(lbd112) + '_K' + ntos(k111)
+                        dir_name = '{dir_out}/{card_dir}/'.format(dir_out=dir_out, card_dir=card_name)
+                        pars = ScanParameters(mass=mass, stheta=stheta, lambda112=lbd112, kappa111=k111)
+                        generate_card(pars, dir_name, card_name, cont, merge=FLAGS.merge)                      
+        print("{} cards were generated.".format(len(mass_points)*len(stheta_points)*len(l112_points)*len(k111_points)))
 
 if __name__=='__main__':
     example = 'python generateCards.py --out Singlet_all'
@@ -276,5 +289,7 @@ if __name__=='__main__':
                         help='Output directory for datacards')
     parser.add_argument("--tag", required=True, help="Identifier.")
     parser.add_argument("--merge", action="store_true", help="Whether to merge all datacards into one *_proc_card.dat.")
+    manual_help = "Produce data points as individually specified (no scan across all combinations)."
+    parser.add_argument("--manual", action="store_true", help=manual_help)
     FLAGS = parser.parse_args()
     main(FLAGS)
