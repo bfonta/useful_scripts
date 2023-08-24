@@ -250,10 +250,25 @@ def main(opt):
 
     ## list of parameters being scanned
     if opt.manual:
-        mass_points = (300.00, 300.00, 600.00, 600.00, 1000.00, 1000.00)             
-        stheta_points = (0.3, 0.1, 0.8, 0.1, 0.4, 0.3)
-        l112_points = (-500.00, -400.00, 600.00, 300.00, 100.00, 300.00)
-        k111_points = (1.0,)*6 # + (2.4,)*6 + ... tri-linear kappa
+        npoints = 8
+        mass_points = (280.00, 280.00, 280.00, 280.00, 500.00, 500.00, 500.00, 500.00,)
+        stheta_points = (0.70, 0.30, 0.70, 0.20, 0.30, 0.50, 0.50, 0.30) 
+        l112_points = (400.00, 500.00, -400.00, -500.00, -500.00, -400.00, 400.00, 500.00)
+        k111_points = (1.0,)*npoints # ... tri-linear kappa
+        assert all(len(x) == npoints for x in (mass_points, stheta_points, l112_points, k111_points))
+
+        # Thresholds for m(X)=280.0
+        # The closest value to interf=0.8 and G/M=(5.0+-0.5)% is     interf=0.9791 and G/M=4.7533     for sin(theta)=0.7 and lambda_112=400.0
+        # The closest value to interf=0.9 and G/M=(5.0+-1.5)% is     interf=0.8967 and G/M=5.9152     for sin(theta)=0.3 and lambda_112=500.0
+        # The closest value to interf=1.1 and G/M=(5.0+-0.5)% is     interf=1.0237 and G/M=4.7533     for sin(theta)=0.7 and lambda_112=-400.0
+        # The closest value to interf=1.2 and G/M=(5.0+-1.0)% is     interf=1.164 and G/M=5.8033     for sin(theta)=0.2 and lambda_112=-500.0
+        
+        # Thresholds for m(X)=500.0
+        # The closest value to interf=0.8 and G/M=(5.0+-0.5)% is     interf=0.8206 and G/M=4.5973     for sin(theta)=0.3 and lambda_112=-500.0
+        # The closest value to interf=0.9 and G/M=(5.0+-0.5)% is     interf=0.8736 and G/M=5.4038     for sin(theta)=0.5 and lambda_112=-400.0
+        # The closest value to interf=1.1 and G/M=(5.0+-0.5)% is     interf=1.1224 and G/M=5.4038     for sin(theta)=0.5 and lambda_112=400.0
+        # The closest value to interf=1.2 and G/M=(5.0+-0.5)% is     interf=1.1706 and G/M=4.5973     for sin(theta)=0.3 and lambda_112=500.0
+
     else:
         mass_points = (280.00, 300.00, 400.00, 500.00, 600.00, 700.00, 800.00, 900.00, 1000.00)
         stheta_points = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99) # sine of theta mixing between the new scalar and the SM Higgs

@@ -9,5 +9,6 @@ generate g g > H H [noborn=QCD]
 
 # display diagrams
 
-output /data_CMS/cms/alves/FiniteWidth/MadGraph_outputs_resonly/Singlet_Ttag_Mmass_STstheta_Llambda_Kkap -nojpeg
+#output /data_CMS/cms/alves/FiniteWidth/MadGraph_outputs_resonly/Singlet_Ttag_Mmass_STstheta_Llambda_Kkap_Output -nojpeg
+output Singlet_Ttag_Mmass_STstheta_Llambda_Kkap -nojpeg
 
