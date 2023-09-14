@@ -74,38 +74,44 @@ def plot_width_1D(widths, fig, ax):
         plt.axhline(y=yv, **linesopth)
     return 'MassVsWidth_1D.png'
 
-def plot_width_2D(mres, w_sm, fig, ax, mode='default'):
+def plot_width_2D(mres, w_sm, fig, ax, mode='br'):
     """Plot the 2D width for a specific resonance mass and SM width."""
-    assert mode in ('default', 'ratio')
+    assert mode in ('width', 'ratio', 'br')
     
     hep.cms.lumitext(r"$M_{{X}}={}\:[GeV]$".format(int(mres)))
     ax.set_xlabel(r'$\sin\theta$')
     ax.set_ylabel(r'$\lambda_{112}$ [GeV]')
 
-    npoints = 200
+    npoints = 300
     sint = np.linspace(0., 1., npoints)
     lbd = np.linspace(-600., 600., npoints)
-    if mode == 'default':
-        widths = np.array([eval_width(mres, w_sm, s, l) for l in lbd for s in sint])
-    else:
-        widths = np.array([eval_width(mres, w_sm, s, l)/mres for l in lbd for s in sint])
-        
+
+    zlist = []
+    for l in lbd:
+        for s in sint:
+            if mode == 'width':
+                zlist += [eval_width(mres, w_sm, s, l)[0]]
+            elif mode == 'ratio':
+                zlist += [eval_width(mres, w_sm, s, l)[0]/mres]
+            elif mode == 'br':
+                zlist += [eval_width(mres, w_sm, s, l)[1]/eval_width(mres, w_sm, s, l)[0]]
+
     X, Y = np.meshgrid(sint, lbd)
-    Z = widths.reshape(npoints, npoints)
+    Z = np.array(zlist).reshape(npoints, npoints)
     pos = plt.pcolor(X, Y, Z)
 
-    if mode == 'default':
+    if mode == 'width':
         cbar = fig.colorbar(pos, ax=ax, label=r"$\Gamma_{X}$ [GeV]")
-    else:
+    elif mode == 'ratio':
         cbar = fig.colorbar(pos, ax=ax, label=r"$\Gamma_{X}/M_{X}$")
-    #cbar.ax.set_ylabel(r"\Gamma_{X}", rotation=0)
-    # cbar = hep.hist2dplot(Z, X, Y, flow=None)
+    elif mode == 'br':
+        cbar = fig.colorbar(pos, ax=ax, label=r"$\Gamma_{X\rightarrow HH}/\Gamma_{X}$")
 
-    # cbar.cbar.ax.set_ylabel(labels.zlabel, rotation=0, labelpad=labels.labelpad, loc='top')
-    #cbar.cbar.ax.tick_params(axis='y', labelrotation=0)
     name = 'MassVsWidth_2D_' + str(int(mres))
     if mode == 'ratio':
         name += "_ratio"
+    elif mode == 'br':
+        name += "_br"
     name += '.png'
     return name
     
@@ -118,7 +124,7 @@ def plot_width(p1, p2=None, mode='1D'):
     if mode == '1D':
         name = plot_width_1D(widths=p1, fig=fig, ax=ax)
     else:
-        name = plot_width_2D(mres=p1, w_sm=p2, fig=fig, ax=ax, mode='ratio')
+        name = plot_width_2D(mres=p1, w_sm=p2, fig=fig, ax=ax, mode='br')
                 
     plt.tight_layout()
     plt.savefig(name)
@@ -127,7 +133,7 @@ def plot_width(p1, p2=None, mode='1D'):
 def eval_width(m2, w_sm, st, lbd):
     m1 = 125. # GeV, recommended by the Yellow Report Section 4
     width_2_to_11 = (lbd**2 * np.sqrt(1-4*m1**2/m2**2)) / (8*np.pi*m2)
-    return st**2*w_sm + width_2_to_11
+    return st**2*w_sm + width_2_to_11, width_2_to_11
         
 
 def calc_width(mres, stheta, lambda112, plot=False):
@@ -183,7 +189,7 @@ def calc_width(mres, stheta, lambda112, plot=False):
             950 :   sum((1.278E-2, 1.969E-3, 6.962E-6, 6.250E-4, 3.926E1,  6.293E-2, 2.087E-4, 3.899E-4, 2.662E2, 1.314E2)),
             1000:   sum((1.334E-2, 2.072E-3, 7.326E-6, 6.528E-4, 4.163E1,  6.392E-2, 2.660E-4, 3.932E-4, 3.118E2, 1.541E2))}
 
-    width_2 = eval_width(mres, w_sm[mres], stheta, lambda112)
+    width_2 = eval_width(mres, w_sm[mres], stheta, lambda112)[0]
     
     if plot:
         plot_width(w_sm, mode='1D')
