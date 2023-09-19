@@ -250,11 +250,17 @@ def main(opt):
 
     ## list of parameters being scanned
     if opt.manual:
-        npoints = 8
-        mass_points = (280.00, 280.00, 280.00, 280.00, 500.00, 500.00, 500.00, 500.00,)
-        stheta_points = (0.70, 0.30, 0.70, 0.20, 0.30, 0.50, 0.50, 0.30) 
-        l112_points = (400.00, 500.00, -400.00, -500.00, -500.00, -400.00, 400.00, 500.00)
+        # npoints = 8
+        # mass_points = (280.00, 280.00, 280.00, 280.00, 500.00, 500.00, 500.00, 500.00,)
+        # stheta_points = (0.70, 0.30, 0.70, 0.20, 0.30, 0.50, 0.50, 0.30) 
+        # l112_points = (400.00, 500.00, -400.00, -500.00, -500.00, -400.00, 400.00, 500.00)
+        # k111_points = (1.0,)*npoints # ... tri-linear kappa
+        npoints = 2
+        mass_points = (500.00, 500.00,)
+        stheta_points = (0.033, 0.033,) 
+        l112_points = (-600.00, 600.00,)
         k111_points = (1.0,)*npoints # ... tri-linear kappa
+
         assert all(len(x) == npoints for x in (mass_points, stheta_points, l112_points, k111_points))
 
         # Thresholds for m(X)=280.0
