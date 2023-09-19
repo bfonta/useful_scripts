@@ -6,6 +6,11 @@ import argparse
 import fileinput as fp
 import numpy as np
 import re
+
+import matplotlib
+import matplotlib.pyplot as plt
+import mplhep as hep
+plt.style.use(hep.style.ROOT)
     
 class ScanParameters:
     class dot(dict):
@@ -52,35 +57,85 @@ class CardsContent:
         self.proc_card.close()
         self.extra_card.close()
 
-def plot_width(widths):
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import mplhep as hep
-    plt.style.use(hep.style.ROOT)
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    
+def plot_width_1D(widths, fig, ax):
     ax.plot(list(widths.keys()), list(widths.values()), color='black')
-    ax.set_xscale('log')
     ax.set_xticks([100, 200, 300, 500, 1000])
     ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     
     ax.set_xlabel('$M_{H}$ [GeV]')
-    
+    ax.set_ylabel('$\Gamma_{H}$ [GeV]')
+    ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_ylabel(r'$\Gamma_{H}$ [GeV]')
     
     linesoptv = dict(linestyle='--', linewidth=1.5, color='red')
-    plt.axvline(x=250., **linesoptv)
     plt.axvline(x=125.09, **linesoptv)
     linesopth = dict(linestyle='--', linewidth=1.5, color='gray')
     for yv in (1E-2, 1E-1, 1E0, 1E1, 1E2, 1E3):
         plt.axhline(y=yv, **linesopth)
-        
+    return 'MassVsWidth_1D.png'
+
+def plot_width_2D(mres, w_sm, fig, ax, mode='br'):
+    """Plot the 2D width for a specific resonance mass and SM width."""
+    assert mode in ('width', 'ratio', 'br')
+    
+    hep.cms.lumitext(r"$M_{{X}}={}\:[GeV]$".format(int(mres)))
+    ax.set_xlabel(r'$\sin\theta$')
+    ax.set_ylabel(r'$\lambda_{112}$ [GeV]')
+
+    npoints = 300
+    sint = np.linspace(0., 1., npoints)
+    lbd = np.linspace(-600., 600., npoints)
+
+    zlist = []
+    for l in lbd:
+        for s in sint:
+            if mode == 'width':
+                zlist += [eval_width(mres, w_sm, s, l)[0]]
+            elif mode == 'ratio':
+                zlist += [eval_width(mres, w_sm, s, l)[0]/mres]
+            elif mode == 'br':
+                zlist += [eval_width(mres, w_sm, s, l)[1]/eval_width(mres, w_sm, s, l)[0]]
+
+    X, Y = np.meshgrid(sint, lbd)
+    Z = np.array(zlist).reshape(npoints, npoints)
+    pos = plt.pcolor(X, Y, Z)
+
+    if mode == 'width':
+        cbar = fig.colorbar(pos, ax=ax, label=r"$\Gamma_{X}$ [GeV]")
+    elif mode == 'ratio':
+        cbar = fig.colorbar(pos, ax=ax, label=r"$\Gamma_{X}/M_{X}$")
+    elif mode == 'br':
+        cbar = fig.colorbar(pos, ax=ax, label=r"$\Gamma_{X\rightarrow HH}/\Gamma_{X}$")
+
+    name = 'MassVsWidth_2D_' + str(int(mres))
+    if mode == 'ratio':
+        name += "_ratio"
+    elif mode == 'br':
+        name += "_br"
+    name += '.png'
+    return name
+    
+def plot_width(p1, p2=None, mode='1D'):
+    assert mode in ('1D', '2D')
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    if mode == '1D':
+        name = plot_width_1D(widths=p1, fig=fig, ax=ax)
+    else:
+        name = plot_width_2D(mres=p1, w_sm=p2, fig=fig, ax=ax, mode='br')
+                
     plt.tight_layout()
-    plt.savefig('HiggsLikeScalarBoson_MassVsWidth.png')
+    plt.savefig(name)
+    plt.close()
+
+def eval_width(m2, w_sm, st, lbd):
+    m1 = 125. # GeV, recommended by the Yellow Report Section 4
+    width_2_to_11 = (lbd**2 * np.sqrt(1-4*m1**2/m2**2)) / (8*np.pi*m2)
+    return st**2*w_sm + width_2_to_11, width_2_to_11
         
+
 def calc_width(mres, stheta, lambda112, plot=False):
     """
     Calculate width of singlet scalar as given by https://arxiv.org/pdf/2010.00597.pdf
@@ -134,13 +189,13 @@ def calc_width(mres, stheta, lambda112, plot=False):
             950 :   sum((1.278E-2, 1.969E-3, 6.962E-6, 6.250E-4, 3.926E1,  6.293E-2, 2.087E-4, 3.899E-4, 2.662E2, 1.314E2)),
             1000:   sum((1.334E-2, 2.072E-3, 7.326E-6, 6.528E-4, 4.163E1,  6.392E-2, 2.660E-4, 3.932E-4, 3.118E2, 1.541E2))}
 
+    width_2 = eval_width(mres, w_sm[mres], stheta, lambda112)[0]
+    
     if plot:
-        plot_width(w_sm)
-        
-    m1 = 125. # GeV, recommended by the Yellow Report Section 4
-    m2 = mres
-    width_2_to_11 = (lambda112**2 * np.sqrt(1-4*m1**2/m2**2)) / (8*np.pi*m2)
-    width_2 = stheta**2*w_sm[m2] + width_2_to_11
+        plot_width(w_sm, mode='1D')
+        if mres in (280., 500.,):
+            plot_width(mres, w_sm[mres], mode='2D')
+            
     return np.round(width_2, 6)
     
 def generate_card(p, dir_name, card_name, content, merge=False):
@@ -182,7 +237,7 @@ def generate_card(p, dir_name, card_name, content, merge=False):
         line = rep(line, spc + 'bsm {} STHETA'.format(p.idx.stheta),       spc + 'bsm {} {}'.format(p.idx.stheta, p.stheta))
         line = rep(line, spc + 'bsm {} LAMBDA112'.format(p.idx.lambda112), spc + 'bsm {} {}'.format(p.idx.lambda112, p.lambda112))
         line = rep(line, spc + 'bsm {} LAMBDA111'.format(p.idx.lambda111), spc + 'bsm {} {}'.format(p.idx.lambda111, p.lambda111))
-        wres = calc_width(mres=p.mass, stheta=p.stheta, lambda112=p.lambda112)
+        wres = calc_width(mres=p.mass, stheta=p.stheta, lambda112=p.lambda112, plot=True)
         line = rep(line, spc + 'decay {} WIDTH'.format(p.idx.pdg),         spc + 'decay {} {}'.format(p.idx.pdg, wres))
         if not line.isspace():
             sys.stdout.write(line + '\n')
@@ -250,15 +305,16 @@ def main(opt):
 
     ## list of parameters being scanned
     if opt.manual:
-        # npoints = 8
-        # mass_points = (280.00, 280.00, 280.00, 280.00, 500.00, 500.00, 500.00, 500.00,)
-        # stheta_points = (0.70, 0.30, 0.70, 0.20, 0.30, 0.50, 0.50, 0.30) 
-        # l112_points = (400.00, 500.00, -400.00, -500.00, -500.00, -400.00, 400.00, 500.00)
-        # k111_points = (1.0,)*npoints # ... tri-linear kappa
         npoints = 2
-        mass_points = (500.00, 500.00,)
-        stheta_points = (0.033, 0.033,) 
-        l112_points = (-600.00, 600.00,)
+        # mass_points = (280.00, 280.00, 280.00, 280.00, 500.00, 500.00, 500.00, 500.00,)
+        # stheta_points = (0.13567098371723735, 0.2894854650837087, 0.2856288516305749, 0.1382831521414572,
+        #                  0.26584438206608024, 0.6230475388128988, 0.623047342987846, 0.2703843950062829) 
+        # l112_points = (463.04669073123836,  456.07996812710076, -456.28973821658485, -462.9614416165804,
+        #                -540.9740053286384, -15.723140044075462, 15.72786607510946, 539.0584734716218)
+        # k111_points = (1.0,)*npoints # ... tri-linear kappa
+        mass_points = (280.00, 500.00)
+        stheta_points = (0., 0.)
+        l112_points = (0., 0.)
         k111_points = (1.0,)*npoints # ... tri-linear kappa
 
         assert all(len(x) == npoints for x in (mass_points, stheta_points, l112_points, k111_points))
