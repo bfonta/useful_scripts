@@ -80,7 +80,7 @@ def plot_width_2D(mres, w_sm, fig, ax, mode='br'):
     
     hep.cms.lumitext(r"$M_{{X}}={}\:[GeV]$".format(int(mres)))
     ax.set_xlabel(r'$\sin\theta$')
-    ax.set_ylabel(r'$\lambda_{112}$ [GeV]')
+    ax.set_ylabel(r'$\lambda_{\text{HHX}}$ [GeV]')
 
     npoints = 300
     sint = np.linspace(0., 1., npoints)
