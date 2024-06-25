@@ -27,7 +27,7 @@ for valk,valN,vale in zip(k,N,eff):
     steps = 10001
     for p_iter in np.linspace(valk/valN,1.,steps):
         sum_left = 0
-        fn = binom(valN, p_iter)
+        fn = binom(valN, p_iter) # binom(number draws, prob sucess)
         for k_left in range(0,valk+1):
             sum_left += fn.pmf(k_left)
         #print(p_iter, sum_left, significance)
